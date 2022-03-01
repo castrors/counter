@@ -1,26 +1,31 @@
-name: counter
-
-on: [pull_request, push]
-
+name: Flutter Web Deploy
+on:
+  push:
+    branches:
+      - main
 jobs:
   build:
+    name: Build Web
+    env:
+      my_secret: ${{secrets.commit_secret}}
     runs-on: ubuntu-latest
-
+    environment: test-env
     steps:
-      - uses: actions/checkout@v2
-      - uses: subosito/flutter-action@v1.5.0
+      - uses: actions/checkout@v1
+      - uses: subosito/flutter-action@v1
 
-      - name: Install Dependencies
-        run: flutter packages get
-
-      - name: Format
-        run: flutter format --set-exit-if-changed lib test
-
-      - name: Analyze
-        run: flutter analyze lib test
-
-      - name: Run tests
-        run: flutter test --no-pub --coverage --test-randomize-ordering-seed random
-
-      - name: Check Code Coverage
-        uses: VeryGoodOpenSource/very_good_coverage@v1.1.1
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build web --release -t lib/main.dart
+      - run: |
+          cd build/web
+          git init
+          git config --global init.defaultBranch main
+          git config --global user.email rodrigodesouzacastro@gmail.com
+          git config --global user.name Rodrigo Castro
+          git status
+          git remote add origin https://${{secrets.commit_secret}}@github.com/castrors/counter.git
+          git checkout -b gh-pages
+          git add --all
+          git commit -m "update"
+          git push origin gh-pages -f
